@@ -1,2 +1,0 @@
-import { Link } from 'react-router-dom'
-export default function Bookings(){return <div><p className="text-xs font-bold uppercase tracking-widest text-wine-700">Customer Dashboard</p><h1 className="mt-2 font-display text-4xl font-bold">My Bookings / Deals</h1><div className="card mt-7 p-12 text-center"><p className="text-sm text-gray-500">No bookings or deals yet.</p><Link className="btn-primary mt-5" to="/properties">Explore Properties</Link></div></div>}
