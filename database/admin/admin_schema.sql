@@ -14,41 +14,33 @@ USE neocube_realty;
 CREATE TABLE properties (
     property_id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
-    property_title VARCHAR(200) NOT NULL,
+    property_name VARCHAR(200) NOT NULL,
     location VARCHAR(255) NOT NULL,
 
-    bhk INT NOT NULL,
+    bhk INT DEFAULT 0,
+    bathrooms INT DEFAULT 0,
 
-    property_type ENUM(
-        'APARTMENT',
-        'VILLA',
-        'PENTHOUSE'
-    ) NOT NULL,
+    property_type VARCHAR(50) NOT NULL,
 
     price DECIMAL(15,2) NOT NULL,
-    area_sqft DECIMAL(10,2) NOT NULL,
+    area_sqft DECIMAL(10,2),
 
     owner_name VARCHAR(100),
     owner_phone VARCHAR(15),
     owner_email VARCHAR(150),
 
     description TEXT,
+    image_path VARCHAR(500),
 
-    status ENUM(
-        'AVAILABLE',
-        'BOOKED',
-        'SOLD',
-        'INACTIVE'
-    ) DEFAULT 'AVAILABLE',
+    status VARCHAR(50) DEFAULT 'AVAILABLE',
+    featured BOOLEAN DEFAULT FALSE,
 
     added_by BIGINT,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP
 );
-
 
 -- =========================================================
 -- 2. BROKERS
@@ -390,3 +382,4 @@ ON deals(status);
 
 CREATE INDEX idx_commissions_status
 ON commissions(status);
+
