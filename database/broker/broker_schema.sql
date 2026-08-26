@@ -1,24 +1,5 @@
 USE neocube_realty;
 
--- Update lead statuses for Broker Panel
-ALTER TABLE leads
-MODIFY COLUMN status ENUM(
-    'NEW',
-    'CONTACT',
-    'SITE_VISITS',
-    'NEGOTIATION',
-    'BOOKED',
-    'CLOSED_WON',
-    'LOST'
-) DEFAULT 'NEW';
-
-
--- Add Broker listing information to existing properties table
-ALTER TABLE properties
-ADD COLUMN owner_name VARCHAR(100),
-ADD COLUMN owner_phone VARCHAR(15),
-ADD COLUMN owner_email VARCHAR(150),
-ADD COLUMN description TEXT;
 
 
 -- Store multiple photos for a property

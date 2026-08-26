@@ -28,6 +28,12 @@ CREATE TABLE properties (
     price DECIMAL(15,2) NOT NULL,
     area_sqft DECIMAL(10,2) NOT NULL,
 
+    owner_name VARCHAR(100),
+    owner_phone VARCHAR(15),
+    owner_email VARCHAR(150),
+
+    description TEXT,
+
     status ENUM(
         'AVAILABLE',
         'BOOKED',
@@ -38,6 +44,7 @@ CREATE TABLE properties (
     added_by BIGINT,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP
 );
@@ -82,17 +89,15 @@ CREATE TABLE leads (
     property_id BIGINT,
 
     interest VARCHAR(255),
-
     budget DECIMAL(15,2),
 
     status ENUM(
         'NEW',
-        'CONTACTED',
-        'QUALIFIED',
-        'SITE_VISIT',
+        'CONTACT',
+        'SITE_VISITS',
         'NEGOTIATION',
         'BOOKED',
-        'CLOSED',
+        'CLOSED_WON',
         'LOST'
     ) DEFAULT 'NEW',
 
