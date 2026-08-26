@@ -1,0 +1,10 @@
+node_modules
+dist
+.DS_Store
+
+# Java / Maven
+target/
+*.class
+
+# Environment / secrets
+.env
