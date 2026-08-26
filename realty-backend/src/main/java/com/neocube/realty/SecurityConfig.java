@@ -24,7 +24,8 @@ public class SecurityConfig {
                     "/api/auth/**",
                     "/api/customers/**",
                     "/api/properties/**",
-                    "/api/inquiries/**"
+                    "/api/inquiries/**",
+                    "/api/brokers/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             );
