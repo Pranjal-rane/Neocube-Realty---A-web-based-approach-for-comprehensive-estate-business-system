@@ -1,9 +1,11 @@
 package com.neocube.realty.repository;
 
-import com.neocube.realty.entity.Broker;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import com.neocube.realty.entity.Broker;
 
 public interface BrokerRepository extends JpaRepository<Broker, Long> {
 
@@ -14,4 +16,6 @@ public interface BrokerRepository extends JpaRepository<Broker, Long> {
     boolean existsByEmail(String email);
 
     boolean existsByBrokerCode(String brokerCode);
+
+    List<Broker> findByStatusOrderByBrokerIdAsc(String status);
 }
