@@ -29,8 +29,7 @@ public class SecurityConfig {
                     "/api/leads/**",
                     "/api/site-visits/**",
                     "/api/bookings/**",
-                    "/api/deals/**",
-                    "/api/payments/**"
+                    "/api/deals/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             );
