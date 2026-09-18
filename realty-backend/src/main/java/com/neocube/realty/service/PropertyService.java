@@ -1,6 +1,7 @@
 package com.neocube.realty.service;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,44 @@ public class PropertyService {
     public List<Property> getAllProperties() {
         return propertyRepository.findAll();
     }
+
+    public List<Property> searchByLocation(String location) {
+        return propertyRepository.findByLocationContainingIgnoreCase(location);
+    }
+
+
+    public List<Property> searchByBhk(Integer bhk) {
+        return propertyRepository.findByBhk(bhk);
+    }
+
+    public List<Property> searchByPropertyType(String propertyType) {
+        return propertyRepository.findByPropertyTypeIgnoreCase(propertyType);
+    }
+
+    public List<Property> searchByMaxPrice(BigDecimal maxPrice) {
+        return propertyRepository.findByPriceLessThanEqual(maxPrice);
+    }
+
+    public List<Property> searchByStatus(String status) {
+        return propertyRepository.findByStatusIgnoreCase(status);
+    }
+
+    public List<Property> searchProperties(
+        String location,
+        Integer bhk,
+        String propertyType,
+        BigDecimal maxPrice,
+        String status) {
+
+    return propertyRepository.searchProperties(
+            location,
+            bhk,
+            propertyType,
+            maxPrice,
+            status
+    );
+}
+
 
     public Property getPropertyById(Long id) {
         return propertyRepository.findById(id)

@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.math.BigDecimal;
+
 import com.neocube.realty.entity.Property;
 import com.neocube.realty.service.PropertyService;
 
@@ -30,6 +34,48 @@ public class PropertyController {
     public List<Property> getAllProperties() {
         return propertyService.getAllProperties();
     }
+
+    @GetMapping("/search")
+    public List<Property> searchByLocation(@RequestParam String location) {
+        return propertyService.searchByLocation(location);
+    }
+
+    @GetMapping("/search/bhk")
+    public List<Property> searchByBhk(@RequestParam Integer bhk) {
+        return propertyService.searchByBhk(bhk);
+    }
+
+    @GetMapping("/search/type")
+    public List<Property> searchByPropertyType(@RequestParam String propertyType) {
+        return propertyService.searchByPropertyType(propertyType);
+    }
+
+    @GetMapping("/search/price")
+    public List<Property> searchByMaxPrice(@RequestParam BigDecimal maxPrice) {
+        return propertyService.searchByMaxPrice(maxPrice);
+    }
+
+    @GetMapping("/search/status")
+    public List<Property> searchByStatus(@RequestParam String status) {
+        return propertyService.searchByStatus(status);
+    }
+
+    @GetMapping("/filter")
+    public List<Property> filterProperties(
+        @RequestParam(required = false) String location,
+        @RequestParam(required = false) Integer bhk,
+        @RequestParam(required = false) String propertyType,
+        @RequestParam(required = false) BigDecimal maxPrice,
+        @RequestParam(required = false) String status) {
+
+    return propertyService.searchProperties(
+            location,
+            bhk,
+            propertyType,
+            maxPrice,
+            status
+    );
+}
 
     @GetMapping("/{id}")
     public Property getPropertyById(@PathVariable Long id) {
@@ -53,5 +99,7 @@ public class PropertyController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteProperty(@PathVariable Long id) {
         propertyService.deleteProperty(id);
+
+        
     }
 }
