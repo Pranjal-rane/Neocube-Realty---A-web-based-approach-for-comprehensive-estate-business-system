@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.neocube.realty.entity.Broker;
+import com.neocube.realty.entity.BrokerStatus;
 
 public interface BrokerRepository extends JpaRepository<Broker, Long> {
 
@@ -17,5 +18,5 @@ public interface BrokerRepository extends JpaRepository<Broker, Long> {
 
     boolean existsByBrokerCode(String brokerCode);
 
-    List<Broker> findByStatusOrderByBrokerIdAsc(String status);
+    List<Broker> findByStatusOrderByBrokerIdAsc(BrokerStatus status);
 }

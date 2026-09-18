@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -26,7 +28,7 @@ public class Broker {
     @Column(name = "broker_id")
     private Long brokerId;
 
-    @Column(name = "broker_code", nullable = false, unique = true, length = 50)
+    @Column(name = "broker_code", nullable = false, unique = true, length = 20)
     private String brokerCode;
 
     @Column(name = "full_name", nullable = false, length = 100)
@@ -35,14 +37,15 @@ public class Broker {
     @Column(name = "email", nullable = false, unique = true, length = 150)
     private String email;
 
-    @Column(name = "phone", nullable = false, length = 20)
+    @Column(name = "phone", nullable = false, unique = true, length = 15)
     private String phone;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(name = "password_hash", length = 255)
     private String passwordHash;
 
-    @Column(name = "status", nullable = false, length = 20)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private BrokerStatus status = BrokerStatus.ACTIVE;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

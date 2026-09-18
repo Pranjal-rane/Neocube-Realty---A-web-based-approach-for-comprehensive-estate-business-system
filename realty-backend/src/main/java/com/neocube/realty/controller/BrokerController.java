@@ -31,9 +31,7 @@ public class BrokerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Broker> getBrokerById(
-            @PathVariable Long id) {
-
+    public ResponseEntity<Broker> getBrokerById(@PathVariable Long id) {
         return brokerService.getBrokerById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -58,9 +56,7 @@ public class BrokerController {
     }
 
     @PostMapping
-    public Broker createBroker(
-            @RequestBody Broker broker) {
-
+    public Broker createBroker(@RequestBody Broker broker) {
         return brokerService.saveBroker(broker);
     }
 
@@ -69,23 +65,18 @@ public class BrokerController {
             @PathVariable Long id,
             @RequestBody Broker broker) {
 
-        return brokerService.getBrokerById(id)
-                .map(existing -> {
-                    broker.setBrokerId(id);
-                    return ResponseEntity.ok(brokerService.updateBroker(broker));
-                })
+        return brokerService.updateBroker(id, broker)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBroker(
-            @PathVariable Long id) {
+    public ResponseEntity<Void> deleteBroker(@PathVariable Long id) {
 
-        if (brokerService.getBrokerById(id).isPresent()) {
-            brokerService.deleteBroker(id);
+        if (brokerService.deleteBroker(id)) {
             return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.notFound().build();
         }
+
+        return ResponseEntity.notFound().build();
     }
 }
