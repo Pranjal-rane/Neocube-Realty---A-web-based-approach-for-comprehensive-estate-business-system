@@ -2,6 +2,9 @@ package com.neocube.realty.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -43,4 +46,16 @@ public class Customer {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+    LocalDateTime now = LocalDateTime.now();
+    createdAt = now;
+    updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+    updatedAt = LocalDateTime.now();
+    }
 }

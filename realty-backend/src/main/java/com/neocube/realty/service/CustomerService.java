@@ -26,7 +26,12 @@ public class CustomerService {
     }
 
     public Customer createCustomer(Customer customer) {
-        return customerRepository.save(customer);
+
+    customer.setPasswordHash(
+            passwordEncoder.encode(customer.getPasswordHash())
+    );
+
+    return customerRepository.save(customer);
     }
 
     public Optional<Customer> getCustomerById(Long customerId) {
