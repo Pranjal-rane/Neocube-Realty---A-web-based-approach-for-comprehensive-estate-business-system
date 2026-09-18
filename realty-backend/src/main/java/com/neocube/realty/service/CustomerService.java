@@ -28,4 +28,16 @@ public class CustomerService {
     public Optional<Customer> getCustomerById(Long customerId) {
         return customerRepository.findById(customerId);
     }
+
+    public Customer login(String email, String password) {
+
+        Customer customer = customerRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+
+        if (!password.equals(customer.getPasswordHash())) {
+            throw new RuntimeException("Invalid email or password");
+        }
+
+        return customer;
+    }
 }

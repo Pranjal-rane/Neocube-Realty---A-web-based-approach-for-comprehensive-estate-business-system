@@ -1,39 +1,33 @@
--- =========================================================
--- NEOCUBE REALTY
--- ADMIN PANEL DATABASE SCHEMA
--- =========================================================
 
 USE neocube_realty;
 
-
 -- =========================================================
--- 1. PROPERTIES
--- Admin: Properties Management
+-- PROPERTIES
+-- Shared by Customer + Admin + Broker
 -- =========================================================
 
 CREATE TABLE properties (
     property_id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
-    property_title VARCHAR(200) NOT NULL,
+    property_name VARCHAR(200) NOT NULL,
     location VARCHAR(255) NOT NULL,
+    property_type VARCHAR(50) NOT NULL,
 
-    bhk INT NOT NULL,
-
-    property_type ENUM(
-        'APARTMENT',
-        'VILLA',
-        'PENTHOUSE'
-    ) NOT NULL,
+    bhk TINYINT UNSIGNED DEFAULT 0,
+    bathrooms TINYINT UNSIGNED DEFAULT 0,
 
     price DECIMAL(15,2) NOT NULL,
-    area_sqft DECIMAL(10,2) NOT NULL,
+    area_sqft DECIMAL(10,2),
 
-    status ENUM(
-        'AVAILABLE',
-        'BOOKED',
-        'SOLD',
-        'INACTIVE'
-    ) DEFAULT 'AVAILABLE',
+    owner_name VARCHAR(100),
+    owner_phone VARCHAR(15),
+    owner_email VARCHAR(150),
+
+    description TEXT,
+    image_path VARCHAR(500),
+
+    status VARCHAR(50) NOT NULL DEFAULT 'AVAILABLE',
+    featured BOOLEAN DEFAULT FALSE,
 
     added_by BIGINT,
 
@@ -102,6 +96,11 @@ CREATE TABLE leads (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
 
+    CONSTRAINT fk_lead_customer
+        FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id)
+        ON DELETE SET NULL,
+
     CONSTRAINT fk_lead_property
         FOREIGN KEY (property_id)
         REFERENCES properties(property_id)
@@ -141,37 +140,34 @@ CREATE TABLE lead_assignments (
         ON DELETE SET NULL
 );
 
-
 -- =========================================================
--- 5. SITE VISITS
--- Admin: Site Visit Management
+-- SITE VISITS
+-- Shared by Customer + Admin + Broker
 -- =========================================================
 
 CREATE TABLE site_visits (
     site_visit_id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
     customer_id BIGINT NOT NULL,
-
     property_id BIGINT NOT NULL,
+    broker_id BIGINT NULL,
 
-    broker_id BIGINT,
+    preferred_date DATE NOT NULL,
+    preferred_time TIME NOT NULL,
 
-    visit_date DATE NOT NULL,
-    visit_time TIME NOT NULL,
-
-    status ENUM(
-        'SCHEDULED',
-        'COMPLETED',
-        'CANCELLED',
-        'RESCHEDULED'
-    ) DEFAULT 'SCHEDULED',
-
+    message TEXT,
     map_location VARCHAR(500),
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(30) NOT NULL DEFAULT 'REQUESTED',
 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_visit_customer
+        FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id)
+        ON DELETE CASCADE,
 
     CONSTRAINT fk_visit_property
         FOREIGN KEY (property_id)
@@ -186,41 +182,33 @@ CREATE TABLE site_visits (
 
 
 -- =========================================================
--- 6. BOOKINGS
--- Admin: Booking Management
+-- BOOKINGS
+-- Shared by Customer + Admin + Broker
 -- =========================================================
 
 CREATE TABLE bookings (
     booking_id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
     customer_id BIGINT NOT NULL,
-
     property_id BIGINT NOT NULL,
+    broker_id BIGINT NULL,
 
-    broker_id BIGINT,
+    booking_date DATE,
 
-    amount DECIMAL(15,2) NOT NULL,
+    amount DECIMAL(15,2),
+    notes TEXT,
 
-    payment_status ENUM(
-        'PENDING',
-        'PARTIAL',
-        'PAID',
-        'FAILED'
-    ) DEFAULT 'PENDING',
-
-    status ENUM(
-        'PENDING',
-        'CONFIRMED',
-        'CANCELLED',
-        'COMPLETED'
-    ) DEFAULT 'PENDING',
-
-    booking_date DATE NOT NULL,
+    payment_status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_booking_customer
+        FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id)
+        ON DELETE RESTRICT,
 
     CONSTRAINT fk_booking_property
         FOREIGN KEY (property_id)
@@ -232,7 +220,6 @@ CREATE TABLE bookings (
         REFERENCES brokers(broker_id)
         ON DELETE SET NULL
 );
-
 
 -- =========================================================
 -- 7. PAYMENTS
@@ -298,6 +285,11 @@ CREATE TABLE deals (
 
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_deal_customer
+        FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id)
+        ON DELETE RESTRICT,
 
     CONSTRAINT fk_deal_booking
         FOREIGN KEY (booking_id)
@@ -375,7 +367,7 @@ CREATE INDEX idx_leads_created_at
 ON leads(created_at);
 
 CREATE INDEX idx_site_visits_date
-ON site_visits(visit_date);
+ON site_visits(preferred_date);
 
 CREATE INDEX idx_bookings_status
 ON bookings(status);
