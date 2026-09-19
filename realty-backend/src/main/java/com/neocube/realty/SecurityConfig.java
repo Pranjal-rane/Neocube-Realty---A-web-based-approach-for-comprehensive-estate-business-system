@@ -27,6 +27,7 @@ public class SecurityConfig {
                     "/api/inquiries/**",
                     "/api/brokers/**",
                     "/api/leads/**",
+                    "/api/lead-assignments/**",
                     "/api/site-visits/**",
                     "/api/bookings/**",
                     "/api/deals/**"

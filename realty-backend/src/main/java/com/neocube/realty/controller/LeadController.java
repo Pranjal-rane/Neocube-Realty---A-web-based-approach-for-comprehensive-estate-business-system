@@ -97,4 +97,16 @@ public class LeadController {
             return ResponseEntity.notFound().build();
         }
     }
+    @PutMapping("/{id}/status")
+public ResponseEntity<Lead> updateLeadStatus(
+        @PathVariable Long id,
+        @RequestBody LeadStatus status) {
+
+    return leadService.getLeadById(id)
+            .map(lead -> {
+                lead.setStatus(status);
+                return ResponseEntity.ok(leadService.updateLead(lead));
+            })
+            .orElse(ResponseEntity.notFound().build());
+}
 }

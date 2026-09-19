@@ -43,13 +43,60 @@ public class LeadAssignmentService {
         lead.setBrokerId(chosenBroker.getBrokerId());
         leadRepository.save(lead);
 
+        createAssignment(
+                lead.getLeadId(),
+                chosenBroker.getBrokerId(),
+                null
+        );
+    }
+
+    public LeadAssignment assignLeadToBroker(
+            Long leadId,
+            Long brokerId,
+            Long assignedBy) {
+
+        Lead lead = leadRepository.findById(leadId)
+                .orElseThrow(() ->
+                        new RuntimeException("Lead not found"));
+
+        Broker broker = brokerRepository.findById(brokerId)
+                .orElseThrow(() ->
+                        new RuntimeException("Broker not found"));
+
+        if (broker.getStatus() != BrokerStatus.ACTIVE) {
+            throw new RuntimeException("Broker is not active");
+        }
+
+        lead.setBrokerId(brokerId);
+        leadRepository.save(lead);
+
+        return createAssignment(
+                leadId,
+                brokerId,
+                assignedBy
+        );
+    }
+
+    public List<LeadAssignment> getAssignmentsByLeadId(Long leadId) {
+        return leadAssignmentRepository.findByLeadId(leadId);
+    }
+
+    public List<LeadAssignment> getAssignmentsByBrokerId(Long brokerId) {
+        return leadAssignmentRepository.findByBrokerId(brokerId);
+    }
+
+    private LeadAssignment createAssignment(
+            Long leadId,
+            Long brokerId,
+            Long assignedBy) {
+
         LeadAssignment assignment = new LeadAssignment();
 
-        assignment.setLeadId(lead.getLeadId());
-        assignment.setBrokerId(chosenBroker.getBrokerId());
-        assignment.setAssignedBy(null);
+        assignment.setLeadId(leadId);
+        assignment.setBrokerId(brokerId);
+        assignment.setAssignedBy(assignedBy);
 
-        leadAssignmentRepository.save(assignment);
+        return leadAssignmentRepository.save(assignment);
     }
 
     private Broker determineNextBroker(List<Broker> activeBrokers) {
