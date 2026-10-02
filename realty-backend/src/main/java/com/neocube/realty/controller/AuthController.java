@@ -31,6 +31,14 @@ public class AuthController {
         );
     }
 
+    @PostMapping("/verify-otp")
+    public Customer verifyOtp(@RequestBody VerifyOtpRequest request) {
+    return customerService.verifyOtp(
+            request.getEmail(),
+            request.getOtp()
+    );
+}
+
     public static class LoginRequest {
 
         private String email;
@@ -52,4 +60,26 @@ public class AuthController {
             this.password = password;
         }
     }
+
+    public static class VerifyOtpRequest {
+
+    private String email;
+    private String otp;
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getOtp() {
+        return otp;
+    }
+
+    public void setOtp(String otp) {
+        this.otp = otp;
+    }
+}
 }

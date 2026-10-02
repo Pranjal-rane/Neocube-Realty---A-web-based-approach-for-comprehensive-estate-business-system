@@ -70,14 +70,13 @@ public class SiteVisitService {
                             updatedSiteVisit.getBrokerId()
                     );
 
-                    existingSiteVisit.setVisitDate(
-                            updatedSiteVisit.getVisitDate()
+                    existingSiteVisit.setPreferredDate(
+                        updatedSiteVisit.getPreferredDate()
                     );
 
-                    existingSiteVisit.setVisitTime(
-                            updatedSiteVisit.getVisitTime()
-                    );
-
+                    existingSiteVisit.setPreferredTime(
+                        updatedSiteVisit.getPreferredTime()
+                );
                     existingSiteVisit.setStatus(
                             updatedSiteVisit.getStatus()
                     );

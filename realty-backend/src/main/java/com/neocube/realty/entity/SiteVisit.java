@@ -25,8 +25,8 @@ public class SiteVisit {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "visit_id")
-    private Long siteVisitId;
+    @Column(name = "site_visit_id")
+    private Long visitId;
 
     @Column(name = "customer_id", nullable = false)
     private Long customerId;
@@ -37,11 +37,14 @@ public class SiteVisit {
     @Column(name = "broker_id")
     private Long brokerId;
 
-    @Column(name = "visit_date", nullable = false)
-    private LocalDate visitDate;
+   @Column(name = "preferred_date", nullable = false)
+    private LocalDate preferredDate;
 
-    @Column(name = "visit_time", nullable = false)
-    private LocalTime visitTime;
+    @Column(name = "preferred_time", nullable = false)
+    private LocalTime preferredTime;
+
+    @Column(name = "message")
+    private String message;
 
     @Column(name = "status")
     private String status;
