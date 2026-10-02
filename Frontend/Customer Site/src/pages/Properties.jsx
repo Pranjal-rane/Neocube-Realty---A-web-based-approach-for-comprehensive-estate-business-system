@@ -1,16 +1,47 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { RotateCcw, SlidersHorizontal } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import PageHero from '../components/PageHero'
 import PropertyCard from '../components/PropertyCard'
-import { properties, propertyTypes } from '../data/properties'
+import { propertyTypes } from '../data/properties'
 
 export default function Properties({ favorites, toggleFavorite, compare, toggleCompare }) {
   const [params] = useSearchParams()
+  const [properties, setProperties] = useState([])
+
   const [q,setQ] = useState(params.get('q') || '')
   const [type,setType] = useState(params.get('type') || '')
   const [bhk,setBhk] = useState(params.get('bhk') || '')
   const [budget,setBudget] = useState(params.get('budget') || '')
+
+  useEffect(() => {
+  fetch('http://localhost:8080/api/properties')
+    .then(response => response.json())
+    .then(data => {
+      console.log("Backend properties:", data)
+    const mappedProperties = data.map(p => ({
+      
+    id: p.propertyId,
+    name: p.propertyName,
+    location: p.location,
+    type: p.propertyType,
+    bhk: p.bhk,
+    bathrooms: p.bathrooms,
+    price: Number(p.price),
+    area: Number(p.areaSqft),
+    description: p.description,
+    image: p.imagePath,
+    status: p.status,
+    featured: p.featured
+  }))
+
+  setProperties(mappedProperties)
+  console.log("Mapped properties:", mappedProperties)
+})
+    .catch(error => {
+      console.error('Error fetching properties:', error)
+    })
+}, [])
 
   const filtered = useMemo(() => properties.filter((p) => {
     const text = `${p.name} ${p.location}`.toLowerCase()
@@ -18,7 +49,10 @@ export default function Properties({ favorites, toggleFavorite, compare, toggleC
       && (!type || p.type === type)
       && (!bhk || String(p.bhk) === bhk)
       && (!budget || p.price <= Number(budget))
-  }), [q,type,bhk,budget])
+  }), [properties, q, type, bhk, budget])
+
+  console.log("Filters:", { q, type, bhk, budget })
+  console.log("Filtered properties:", filtered)
 
   const reset = () => { setQ(''); setType(''); setBhk(''); setBudget('') }
 

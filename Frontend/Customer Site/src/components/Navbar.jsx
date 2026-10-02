@@ -15,50 +15,129 @@ const mainLinks = [
 export default function Navbar() {
   const [open, setOpen] = useState(false)
 
+  const isLoggedIn =
+    localStorage.getItem('neoLoggedIn') === 'true'
+
+  const handleLogout = () => {
+    localStorage.removeItem('neoLoggedIn')
+    localStorage.removeItem('neoUser')
+
+    window.location.href = '/'
+  }
+
   const linkClass = ({ isActive }) =>
     `flex items-center gap-1 py-3 text-sm font-semibold transition ${
-      isActive ? 'text-wine-700' : 'text-gray-800 hover:text-wine-700'
+      isActive
+        ? 'text-wine-700'
+        : 'text-gray-800 hover:text-wine-700'
     }`
 
   return (
     <header className="sticky top-0 z-50 border-b border-stone-100 bg-white/95 backdrop-blur">
+
       <div className="container-page flex h-[76px] items-center justify-between gap-6">
+
+        {/* Logo */}
         <Link to="/" onClick={() => setOpen(false)}>
-          <img src={logo} alt="NeoCube Realty" className="h-12 w-auto" />
+          <img
+            src={logo}
+            alt="NeoCube Realty"
+            className="h-12 w-auto"
+          />
         </Link>
 
+        {/* Desktop Navigation */}
         <nav className="hidden items-center gap-7 lg:flex">
+
           {mainLinks.map((item) => (
             <div key={item.to} className="relative">
-              <NavLink to={item.to} end={item.to === '/'} className={linkClass}>
+
+              <NavLink
+                to={item.to}
+                end={item.to === '/'}
+                className={linkClass}
+              >
                 {item.label}
-                {item.dropdown && <ChevronDown size={14} />}
+
+                {item.dropdown && (
+                  <ChevronDown size={14} />
+                )}
               </NavLink>
+
             </div>
           ))}
+
         </nav>
 
+        {/* Desktop Right Side */}
         <div className="hidden items-center gap-2 lg:flex">
-          <Link to="/favorites" className="grid h-10 w-10 place-items-center rounded-full text-wine-700 hover:bg-wine-50" title="Favorites">
+
+          <Link
+            to="/favorites"
+            className="grid h-10 w-10 place-items-center rounded-full text-wine-700 hover:bg-wine-50"
+            title="Favorites"
+          >
             <Heart size={20} />
           </Link>
-          <Link to="/login" className="btn-outline px-5 py-2.5">Login</Link>
-          <Link to="/register" className="btn-primary px-5 py-2.5">Register</Link>
+
+          {isLoggedIn ? (
+            <>
+              <Link
+                to="/dashboard"
+                className="btn-primary px-5 py-2.5"
+              >
+                Dashboard
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="btn-outline px-5 py-2.5"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="btn-outline px-5 py-2.5"
+              >
+                Login
+              </Link>
+
+              <Link
+                to="/register"
+                className="btn-primary px-5 py-2.5"
+              >
+                Register
+              </Link>
+            </>
+          )}
+
         </div>
 
+        {/* Mobile Menu Button */}
         <button
+          type="button"
           className="grid h-10 w-10 place-items-center rounded-full border border-stone-200 lg:hidden"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOpen(v => !v)}
           aria-label="Open navigation"
         >
           {open ? <X size={20} /> : <Menu size={20} />}
         </button>
+
       </div>
 
+      {/* Mobile / Half Screen */}
       {open && (
+
         <div className="border-t border-stone-100 bg-white lg:hidden">
+
           <div className="container-page flex flex-col py-3">
+
             {mainLinks.map((item) => (
+
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -68,15 +147,65 @@ export default function Navbar() {
               >
                 {item.label}
               </NavLink>
+
             ))}
-            <div className="flex gap-2 py-4">
-              <Link to="/favorites" onClick={() => setOpen(false)} className="btn-outline flex-1">♡ Favorites</Link>
-              <Link to="/login" onClick={() => setOpen(false)} className="btn-outline flex-1">Login</Link>
-              <Link to="/register" onClick={() => setOpen(false)} className="btn-primary flex-1">Register</Link>
+
+            <div className="flex flex-wrap gap-2 py-4">
+
+              <Link
+                to="/favorites"
+                onClick={() => setOpen(false)}
+                className="btn-outline flex-1"
+              >
+                ♡ Favorites
+              </Link>
+
+              {isLoggedIn ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setOpen(false)}
+                    className="btn-primary flex-1"
+                  >
+                    Dashboard
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="btn-outline flex-1"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    onClick={() => setOpen(false)}
+                    className="btn-outline flex-1"
+                  >
+                    Login
+                  </Link>
+
+                  <Link
+                    to="/register"
+                    onClick={() => setOpen(false)}
+                    className="btn-primary flex-1"
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
+
             </div>
+
           </div>
+
         </div>
+
       )}
+
     </header>
   )
 }

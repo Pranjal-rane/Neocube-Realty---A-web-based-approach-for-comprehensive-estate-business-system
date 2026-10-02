@@ -1,12 +1,42 @@
+import { useEffect, useState } from 'react'
 import { BedDouble, Bath, Ruler, MapPin, Heart, CalendarDays, CheckCircle2 } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import PageHero from '../components/PageHero'
-import { properties } from '../data/properties'
+
 
 export default function PropertyDetails({favorites, toggleFavorite}) {
   const { id } = useParams()
-  const property = properties.find(p=>p.id===Number(id)) || properties[0]
-  const favorite = favorites.includes(property.id)
+const [property, setProperty] = useState(null)
+
+useEffect(() => {
+  fetch(`http://localhost:8080/api/properties/${id}`)
+    .then(response => response.json())
+    .then(data => {
+      setProperty({
+        id: data.propertyId,
+        name: data.propertyName,
+        location: data.location,
+        type: data.propertyType,
+        bhk: data.bhk,
+        baths: data.bathrooms,
+        price: Number(data.price),
+        area: Number(data.areaSqft),
+        description: data.description,
+        image: data.imagePath,
+        status: data.status,
+        featured: data.featured
+      })
+    })
+    .catch(error => {
+      console.error('Error fetching property:', error)
+    })
+}, [id])
+
+if (!property) {
+  return <div className="p-10 text-center">Loading property...</div>
+}
+
+const favorite = favorites.includes(property.id)
 
   return (
     <>
@@ -23,7 +53,9 @@ export default function PropertyDetails({favorites, toggleFavorite}) {
             <span className="inline-flex rounded-full bg-wine-700 px-3 py-1 text-xs font-bold text-white">{property.status}</span>
             <h2 className="mt-4 font-display text-3xl font-bold">{property.name}</h2>
             <p className="mt-2 flex items-center gap-1 text-sm text-gray-500"><MapPin size={15}/>{property.location}</p>
-            <p className="mt-5 text-3xl font-extrabold text-wine-700">{property.priceText}</p>
+            <p className="mt-5 text-3xl font-extrabold text-wine-700">
+  ₹{property.price.toLocaleString('en-IN')}
+            </p>            
             <div className="my-6 grid grid-cols-3 gap-2">{[[BedDouble,property.bhk||'—','BHK'],[Bath,property.baths,'Bath'],[Ruler,property.area,'Sq.Ft.']].map(([Icon,value,label])=><div key={label} className="rounded-lg bg-wine-50 p-3 text-center"><Icon size={18} className="mx-auto text-wine-700"/><b className="mt-1 block text-sm">{value}</b><small className="text-xs text-gray-500">{label}</small></div>)}</div>
             <div className="space-y-2"><Link className="btn-primary w-full" to={`/inquiry?property=${property.id}`}>Enquire Now</Link><Link className="btn-outline w-full" to={`/schedule-visit?property=${property.id}`}><CalendarDays size={17}/> Schedule Site Visit</Link><button className="btn-outline w-full" onClick={()=>toggleFavorite(property.id)}><Heart size={17} fill={favorite?'currentColor':'none'}/>{favorite?'Remove Favorite':'Add to Favorites'}</button></div>
           </aside>

@@ -1,23 +1,115 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import PageHero from '../components/PageHero'
-import { properties } from '../data/properties'
 
 export default function CustomerForm({mode='inquiry'}) {
   const [params] = useSearchParams()
+  const [properties, setProperties] = useState([])
+useEffect(() => {
+  fetch('http://localhost:8080/api/properties')
+    .then(response => response.json())
+    .then(data => {
+      const mappedProperties = data.map(p => ({
+        id: p.propertyId,
+        name: p.propertyName,
+        location: p.location
+      }))
+
+      setProperties(mappedProperties)
+    })
+    .catch(error => {
+      console.error('Error fetching properties:', error)
+    })
+}, [])
+
   const propertyId = Number(params.get('property'))
   const selectedProperty = properties.find(p=>p.id===propertyId)
   const [done,setDone] = useState(false)
 
-  const submit = e => {
+  const submit = async e => {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
-    const record = Object.fromEntries(form.entries())
-    record.createdAt = new Date().toLocaleString()
-    const key = mode === 'visit' ? 'neoVisits' : 'neoInquiries'
-    const existing = JSON.parse(localStorage.getItem(key) || '[]')
-    localStorage.setItem(key, JSON.stringify([...existing, record]))
+
+if (mode === 'inquiry') {
+  try {
+    const user = JSON.parse(localStorage.getItem('neoUser'))
+
+    if (!user?.id) {
+      alert('Please login before submitting an inquiry.')
+      return
+    }
+
+    const response = await fetch('http://localhost:8080/api/inquiries', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        customerId: user.id,
+        propertyId: Number(form.get('property')),
+        budget: form.get('budget'),
+        bhkPreference: form.get('bhk'),
+        message: form.get('message'),
+        inquiryStatus: 'NEW'
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error('Inquiry submission failed')
+    }
+
     setDone(true)
+
+  } catch (error) {
+    console.error('Error submitting inquiry:', error)
+    alert('Unable to submit inquiry. Please try again.')
+  }
+
+  return
+}
+
+if (mode === 'visit') {
+  try {
+    const user = JSON.parse(localStorage.getItem('neoUser'))
+
+    if (!user?.id) {
+      alert('Please login before scheduling a site visit.')
+      return
+    }
+
+    const timeMap = {
+      '10:00 AM': '10:00:00',
+      '12:00 PM': '12:00:00',
+      '3:00 PM': '15:00:00',
+      '5:00 PM': '17:00:00'
+    }
+
+    const response = await fetch('http://localhost:8080/api/site-visits', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        customerId: user.id,
+        propertyId: Number(form.get('property')),
+        preferredDate: form.get('date'),
+        preferredTime: timeMap[form.get('time')],
+        message: form.get('message'),
+        status: 'REQUESTED'
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error('Site visit scheduling failed')
+    }
+
+    setDone(true)
+
+  } catch (error) {
+    console.error('Error scheduling site visit:', error)
+    alert('Unable to schedule site visit. Please try again.')
+  }
+}
   }
 
   const visit = mode === 'visit'
