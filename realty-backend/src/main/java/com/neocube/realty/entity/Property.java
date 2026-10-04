@@ -30,7 +30,6 @@ public class Property {
     @Column(name = "property_id")
     private Long propertyId;
 
-
     // =========================
     // BASIC PROPERTY DETAILS
     // =========================
@@ -56,7 +55,6 @@ public class Property {
     @Column(name = "area_sqft", precision = 10, scale = 2)
     private BigDecimal areaSqft;
 
-
     // =========================
     // OWNER DETAILS
     // =========================
@@ -70,7 +68,6 @@ public class Property {
     @Column(name = "owner_email", length = 150)
     private String ownerEmail;
 
-
     // =========================
     // PROPERTY INFORMATION
     // =========================
@@ -81,12 +78,18 @@ public class Property {
     @Column(name = "image_path", length = 500)
     private String imagePath;
 
+    // =========================
+    // 2D BLUEPRINT / FLOOR PLAN
+    // =========================
+
+    @Column(name = "blueprint_path", length = 500)
+    private String blueprintPath;
+
     @Column(name = "status", nullable = false, length = 50)
     private String status = "AVAILABLE";
 
     @Column(name = "featured")
     private Boolean featured = false;
-
 
     // =========================
     // ADMIN / BROKER
@@ -94,7 +97,6 @@ public class Property {
 
     @Column(name = "added_by")
     private Long addedBy;
-
 
     // =========================
     // TIMESTAMPS
@@ -107,14 +109,14 @@ public class Property {
     private LocalDateTime updatedAt;
 
     @PrePersist
-protected void onCreate() {
-    LocalDateTime now = LocalDateTime.now();
-    createdAt = now;
-    updatedAt = now;
-}
+    protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
 
-@PreUpdate
-protected void onUpdate() {
-    updatedAt = LocalDateTime.now();
-}
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
