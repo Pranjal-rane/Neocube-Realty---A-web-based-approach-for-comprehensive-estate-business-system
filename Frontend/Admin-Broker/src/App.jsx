@@ -31,6 +31,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+
           {/* Public customer site */}
           <Route path="/" element={<Home />} />
           <Route path="/properties" element={<Listing />} />
@@ -42,22 +43,133 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
 
           {/* Admin */}
-          <Route path="/admin/dashboard" element={<RequireRole role="admin"><AdminDashboard /></RequireRole>} />
-          <Route path="/admin/properties" element={<RequireRole role="admin"><AdminProperties /></RequireRole>} />
-          <Route path="/admin/brokers" element={<RequireRole role="admin"><AdminBrokers /></RequireRole>} />
-          <Route path="/admin/leads" element={<RequireRole role="admin"><AdminLeads /></RequireRole>} />
-          <Route path="/admin/site-visits" element={<RequireRole role="admin"><AdminSiteVisits /></RequireRole>} />
-          <Route path="/admin/bookings" element={<RequireRole role="admin"><AdminBookings /></RequireRole>} />
-          <Route path="/admin/commission" element={<RequireRole role="admin"><AdminCommission /></RequireRole>} />
-          <Route path="/admin/reports" element={<RequireRole role="admin"><AdminReports /></RequireRole>} />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <RequireRole role="admin">
+                <AdminDashboard />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/admin/properties"
+            element={
+              <RequireRole role="admin">
+                <AdminProperties />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/admin/brokers"
+            element={
+              <RequireRole role="admin">
+                <AdminBrokers />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/admin/leads"
+            element={
+              <RequireRole role="admin">
+                <AdminLeads />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/admin/site-visits"
+            element={
+              <RequireRole role="admin">
+                <AdminSiteVisits />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/admin/bookings"
+            element={
+              <RequireRole role="admin">
+                <AdminBookings />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/admin/commission"
+            element={
+              <RequireRole role="admin">
+                <AdminCommission />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/admin/reports"
+            element={
+              <RequireRole role="admin">
+                <AdminReports />
+              </RequireRole>
+            }
+          />
 
           {/* Broker */}
-          <Route path="/broker/dashboard" element={<RequireRole role="broker"><BrokerDashboard /></RequireRole>} />
-          <Route path="/broker/leads" element={<RequireRole role="broker"><BrokerLeads /></RequireRole>} />
-          <Route path="/broker/listings" element={<RequireRole role="broker"><BrokerListings /></RequireRole>} />
-          <Route path="/broker/leads/:id" element={<RequireRole role="broker"><BrokerLeadDetail /></RequireRole>} />
-          <Route path="/broker/commission" element={<RequireRole role="broker"><BrokerCommission /></RequireRole>} />
-          <Route path="/broker/profile" element={<RequireRole role="broker"><BrokerProfile /></RequireRole>} />
+          <Route
+            path="/broker/dashboard"
+            element={
+              <RequireRole role="broker">
+                <BrokerDashboard />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/broker/leads"
+            element={
+              <RequireRole role="broker">
+                <BrokerLeads />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/broker/listings"
+            element={
+              <RequireRole role="broker">
+                <BrokerListings />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/broker/leads/:id"
+            element={
+              <RequireRole role="broker">
+                <BrokerLeadDetail />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/broker/commission"
+            element={
+              <RequireRole role="broker">
+                <BrokerCommission />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/broker/profile"
+            element={
+              <RequireRole role="broker">
+                <BrokerProfile />
+              </RequireRole>
+            }
+          />
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>
