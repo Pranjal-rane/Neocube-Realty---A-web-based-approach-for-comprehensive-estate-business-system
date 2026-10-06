@@ -1,96 +1,510 @@
+import { useEffect, useState } from "react";
 import { DashboardShell } from "../../components/DashboardLayout";
 import { Card } from "../../components/Bits";
-import { useAuth } from "../../lib/auth";
-import { loadLeads } from "../../lib/mockData";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  CartesianGrid,
+  Legend,
+} from "recharts";
 
-const MONTHLY = [
-  { month: "Apr", leads: 18 },
-  { month: "May", leads: 24 },
-  { month: "Jun", leads: 21 },
-  { month: "Jul", leads: 30 },
-  { month: "Aug", leads: 27 },
+const API_URL = "http://localhost:8080";
+
+const THEME = {
+  burgundy: "#70242B",
+  burgundyLight: "#8B343D",
+  cream: "#F5F1EC",
+  ink: "#241F1F",
+  muted: "#756B68",
+  border: "#E8DED6",
+};
+
+const CHART_COLORS = [
+  "#70242B",
+  "#8B343D",
+  "#A94B53",
+  "#C17A7F",
+  "#D6A3A5",
 ];
 
-const COLORS = ["#7A2E35", "#C08A3E", "#6B8F71", "#96444B"];
-
 export default function AdminReports() {
-  const { allBrokers } = useAuth();
-  const brokers = allBrokers();
-  const LEADS = loadLeads();
+  const [properties, setProperties] = useState([]);
+  const [leads, setLeads] = useState([]);
+  const [brokers, setBrokers] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [deals, setDeals] = useState([]);
 
-  const brokerPerf = brokers.map((b) => {
-    const leads = LEADS.filter((l) => l.brokerId === b.brokerId);
-    const deals = leads.filter((l) => l.status === "won").length;
-    const conversion = leads.length ? ((deals / leads.length) * 100).toFixed(1) : "0.0";
-    return { ...b, leadCount: leads.length, deals, conversion };
-  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const pieData = brokers.map((b) => ({
-    name: b.name,
-    value: LEADS.filter((l) => l.brokerId === b.brokerId).length,
+  useEffect(() => {
+    loadReports();
+  }, []);
+
+  async function loadReports() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const [
+        propertiesResponse,
+        leadsResponse,
+        brokersResponse,
+        bookingsResponse,
+        dealsResponse,
+      ] = await Promise.all([
+        fetch(`${API_URL}/api/properties`),
+        fetch(`${API_URL}/api/leads`),
+        fetch(`${API_URL}/api/brokers`),
+        fetch(`${API_URL}/api/bookings`),
+        fetch(`${API_URL}/api/deals`),
+      ]);
+
+      if (
+        !propertiesResponse.ok ||
+        !leadsResponse.ok ||
+        !brokersResponse.ok ||
+        !bookingsResponse.ok ||
+        !dealsResponse.ok
+      ) {
+        throw new Error("Failed to load report data");
+      }
+
+      const [
+        propertiesData,
+        leadsData,
+        brokersData,
+        bookingsData,
+        dealsData,
+      ] = await Promise.all([
+        propertiesResponse.json(),
+        leadsResponse.json(),
+        brokersResponse.json(),
+        bookingsResponse.json(),
+        dealsResponse.json(),
+      ]);
+
+      setProperties(Array.isArray(propertiesData) ? propertiesData : []);
+      setLeads(Array.isArray(leadsData) ? leadsData : []);
+      setBrokers(Array.isArray(brokersData) ? brokersData : []);
+      setBookings(Array.isArray(bookingsData) ? bookingsData : []);
+      setDeals(Array.isArray(dealsData) ? dealsData : []);
+    } catch (err) {
+      console.error("Reports API Error:", err);
+      setError(err.message || "Unable to load reports.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const leadStatuses = [
+    "NEW",
+    "CONTACTED",
+    "QUALIFIED",
+    "SITE_VISIT",
+    "NEGOTIATION",
+    "BOOKED",
+    "CLOSED",
+    "LOST",
+  ];
+
+  const leadChartData = leadStatuses.map((status) => ({
+    status: status.replace("_", " "),
+    count: leads.filter(
+      (lead) =>
+        String(lead.status || "").toUpperCase() === status
+    ).length,
   }));
 
+  const bookingStatuses = [
+    "PENDING",
+    "CONFIRMED",
+    "COMPLETED",
+    "CANCELLED",
+  ];
+
+  const bookingChartData = bookingStatuses
+    .map((status) => ({
+      name: status,
+      value: bookings.filter(
+        (booking) =>
+          String(booking.status || "").toUpperCase() === status
+      ).length,
+    }))
+    .filter((item) => item.value > 0);
+
+  const businessChartData = [
+    {
+      name: "Properties",
+      count: properties.length,
+    },
+    {
+      name: "Leads",
+      count: leads.length,
+    },
+    {
+      name: "Brokers",
+      count: brokers.length,
+    },
+    {
+      name: "Bookings",
+      count: bookings.length,
+    },
+    {
+      name: "Deals",
+      count: deals.length,
+    },
+  ];
+
+  const dealStatusData = [
+    "OPEN",
+    "CLOSED",
+    "WON",
+    "LOST",
+    "CANCELLED",
+  ]
+    .map((status) => ({
+      name: status,
+      value: deals.filter(
+        (deal) =>
+          String(deal.status || "").toUpperCase() === status
+      ).length,
+    }))
+    .filter((item) => item.value > 0);
+
+  function formatAmount(amount) {
+    return `₹${Number(amount || 0).toLocaleString("en-IN")}`;
+  }
+
+  const totalDealValue = deals.reduce(
+    (total, deal) => total + Number(deal.dealAmount || 0),
+    0
+  );
+
+  const tooltipStyle = {
+    backgroundColor: "#FFFFFF",
+    border: `1px solid ${THEME.border}`,
+    borderRadius: "8px",
+    color: THEME.ink,
+  };
+
+  if (loading) {
+    return (
+      <DashboardShell
+        role="admin"
+        title="Reports"
+        subtitle="Business analytics from real database data"
+      >
+        <div className="py-10 text-center text-sm text-muted">
+          Loading reports...
+        </div>
+      </DashboardShell>
+    );
+  }
+
   return (
-    <DashboardShell role="admin" title="Reports & Analytics" subtitle="Leads, sales and broker performance">
-      <div className="grid gap-6 lg:grid-cols-2">
+    <DashboardShell
+      role="admin"
+      title="Reports"
+      subtitle="Business analytics from real database data"
+    >
+      {error && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* Summary Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        {[
+          ["Properties", properties.length],
+          ["Leads", leads.length],
+          ["Brokers", brokers.length],
+          ["Bookings", bookings.length],
+          ["Deal Value", formatAmount(totalDealValue)],
+        ].map(([label, value]) => (
+          <div
+            key={label}
+            className="rounded-xl border bg-white p-5 shadow-sm"
+            style={{ borderColor: THEME.border }}
+          >
+            <p
+              className="text-xs uppercase tracking-[0.12em]"
+              style={{ color: THEME.muted }}
+            >
+              {label}
+            </p>
+
+            <p
+              className="mt-2 text-2xl font-semibold"
+              style={{ color: THEME.ink }}
+            >
+              {value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+
+        {/* Business Overview */}
         <Card>
-          <h2 className="font-display text-sm uppercase tracking-[0.14em] text-ink">Leads per month</h2>
-          <div className="mt-4 h-64">
+          <h2
+            className="font-display text-sm uppercase tracking-[0.14em]"
+            style={{ color: THEME.ink }}
+          >
+            Business Overview
+          </h2>
+
+          <p
+            className="mt-1 text-xs"
+            style={{ color: THEME.muted }}
+          >
+            Real records currently available in the system
+          </p>
+
+          <div className="mt-6 h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={MONTHLY}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F2ECE6" />
-                <XAxis dataKey="month" stroke="#7A6E6C" fontSize={12} />
-                <YAxis stroke="#7A6E6C" fontSize={12} />
-                <Tooltip />
-                <Bar dataKey="leads" fill="#7A2E35" radius={[4, 4, 0, 0]} />
+              <BarChart
+                data={businessChartData}
+                margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke={THEME.border}
+                />
+
+                <XAxis
+                  dataKey="name"
+                  tick={{
+                    fill: THEME.muted,
+                    fontSize: 12,
+                  }}
+                  axisLine={{
+                    stroke: THEME.border,
+                  }}
+                  tickLine={false}
+                />
+
+                <YAxis
+                  allowDecimals={false}
+                  tick={{
+                    fill: THEME.muted,
+                    fontSize: 12,
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+
+                <Tooltip contentStyle={tooltipStyle} />
+
+                <Bar
+                  dataKey="count"
+                  name="Records"
+                  fill={THEME.burgundy}
+                  radius={[5, 5, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
+        {/* Lead Status */}
         <Card>
-          <h2 className="font-display text-sm uppercase tracking-[0.14em] text-ink">Leads by broker</h2>
-          <div className="mt-4 h-64">
+          <h2
+            className="font-display text-sm uppercase tracking-[0.14em]"
+            style={{ color: THEME.ink }}
+          >
+            Lead Status
+          </h2>
+
+          <p
+            className="mt-1 text-xs"
+            style={{ color: THEME.muted }}
+          >
+            Distribution of leads by current status
+          </p>
+
+          <div className="mt-6 h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={80} label>
-                  {pieData.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
+              <BarChart
+                data={leadChartData}
+                margin={{ top: 10, right: 10, left: 0, bottom: 25 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke={THEME.border}
+                />
+
+                <XAxis
+                  dataKey="status"
+                  angle={-25}
+                  textAnchor="end"
+                  height={65}
+                  tick={{
+                    fill: THEME.muted,
+                    fontSize: 11,
+                  }}
+                  axisLine={{
+                    stroke: THEME.border,
+                  }}
+                  tickLine={false}
+                />
+
+                <YAxis
+                  allowDecimals={false}
+                  tick={{
+                    fill: THEME.muted,
+                    fontSize: 12,
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+
+                <Tooltip contentStyle={tooltipStyle} />
+
+                <Bar
+                  dataKey="count"
+                  name="Leads"
+                  fill={THEME.burgundyLight}
+                  radius={[5, 5, 0, 0]}
+                />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </Card>
-      </div>
 
-      <Card className="mt-6">
-        <h2 className="font-display text-sm uppercase tracking-[0.14em] text-ink">Broker performance</h2>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase tracking-wide text-muted">
-              <tr>
-                <th className="px-3 py-2">Broker</th>
-                <th className="px-3 py-2">Leads</th>
-                <th className="px-3 py-2">Deals</th>
-                <th className="px-3 py-2">Conversion</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-cream">
-              {brokerPerf.map((b) => (
-                <tr key={b.id}>
-                  <td className="px-3 py-2 font-medium text-ink">{b.name}</td>
-                  <td className="px-3 py-2 text-muted">{b.leadCount}</td>
-                  <td className="px-3 py-2 text-muted">{b.deals}</td>
-                  <td className="px-3 py-2 text-muted">{b.conversion}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+        {/* Booking Status */}
+        <Card>
+          <h2
+            className="font-display text-sm uppercase tracking-[0.14em]"
+            style={{ color: THEME.ink }}
+          >
+            Booking Status
+          </h2>
+
+          <p
+            className="mt-1 text-xs"
+            style={{ color: THEME.muted }}
+          >
+            Current booking distribution
+          </p>
+
+          <div className="mt-6 h-[320px]">
+            {bookingChartData.length === 0 ? (
+              <div
+                className="flex h-full items-center justify-center text-sm"
+                style={{ color: THEME.muted }}
+              >
+                No booking data available.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={bookingChartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label
+                  >
+                    {bookingChartData.map((entry, index) => (
+                      <Cell
+                        key={entry.name}
+                        fill={
+                          CHART_COLORS[
+                            index % CHART_COLORS.length
+                          ]
+                        }
+                      />
+                    ))}
+                  </Pie>
+
+                  <Tooltip contentStyle={tooltipStyle} />
+
+                  <Legend
+                    wrapperStyle={{
+                      color: THEME.muted,
+                      fontSize: "12px",
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </Card>
+
+        {/* Deal Status */}
+        <Card>
+          <h2
+            className="font-display text-sm uppercase tracking-[0.14em]"
+            style={{ color: THEME.ink }}
+          >
+            Deal Status
+          </h2>
+
+          <p
+            className="mt-1 text-xs"
+            style={{ color: THEME.muted }}
+          >
+            Current deal distribution
+          </p>
+
+          <div className="mt-6 h-[320px]">
+            {dealStatusData.length === 0 ? (
+              <div
+                className="flex h-full items-center justify-center text-sm"
+                style={{ color: THEME.muted }}
+              >
+                No deal data available.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={dealStatusData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label
+                  >
+                    {dealStatusData.map((entry, index) => (
+                      <Cell
+                        key={entry.name}
+                        fill={
+                          CHART_COLORS[
+                            index % CHART_COLORS.length
+                          ]
+                        }
+                      />
+                    ))}
+                  </Pie>
+
+                  <Tooltip contentStyle={tooltipStyle} />
+
+                  <Legend
+                    wrapperStyle={{
+                      color: THEME.muted,
+                      fontSize: "12px",
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </Card>
+      </div>
     </DashboardShell>
   );
 }
