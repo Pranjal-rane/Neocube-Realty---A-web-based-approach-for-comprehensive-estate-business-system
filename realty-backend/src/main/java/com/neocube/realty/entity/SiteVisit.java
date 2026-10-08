@@ -37,7 +37,7 @@ public class SiteVisit {
     @Column(name = "broker_id")
     private Long brokerId;
 
-    @Column(name = "preferred_date", nullable = false)
+   @Column(name = "preferred_date", nullable = false)
     private LocalDate preferredDate;
 
     @Column(name = "preferred_time", nullable = false)

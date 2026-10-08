@@ -97,16 +97,28 @@ public class LeadController {
             return ResponseEntity.notFound().build();
         }
     }
-    @PutMapping("/{id}/status")
-public ResponseEntity<Lead> updateLeadStatus(
-        @PathVariable Long id,
-        @RequestBody LeadStatus status) {
 
-    return leadService.getLeadById(id)
-            .map(lead -> {
-                lead.setStatus(status);
-                return ResponseEntity.ok(leadService.updateLead(lead));
-            })
-            .orElse(ResponseEntity.notFound().build());
-}
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Lead> updateLeadStatus(
+            @PathVariable Long id,
+            @RequestBody String status) {
+
+        try {
+            LeadStatus leadStatus = LeadStatus.valueOf(
+                    status.replace("\"", "").trim()
+            );
+
+            return leadService.getLeadById(id)
+                    .map(lead -> {
+                        lead.setStatus(leadStatus);
+                        return ResponseEntity.ok(
+                                leadService.updateLead(lead)
+                        );
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

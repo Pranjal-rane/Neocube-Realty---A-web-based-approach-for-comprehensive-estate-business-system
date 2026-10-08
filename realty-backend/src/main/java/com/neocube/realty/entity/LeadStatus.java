@@ -2,11 +2,10 @@ package com.neocube.realty.entity;
 
 public enum LeadStatus {
     NEW,
-    CONTACTED,
-    QUALIFIED,
-    SITE_VISIT,
+    CONTACT,
+    SITE_VISITS,
     NEGOTIATION,
     BOOKED,
-    CLOSED,
+    CLOSED_WON,
     LOST
 }
