@@ -1,11 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { DashboardShell } from "../../components/DashboardLayout";
 import { Card } from "../../components/Bits";
 import PhotoUpload from "../../components/PhotoUpload";
 import { useAuth } from "../../lib/auth";
-import { loadProperties, saveProperties, nextPropertyId, localityCoords, LOCALITY_NAMES, inr } from "../../lib/mockData";
 import { Plus, Pencil, X, ExternalLink } from "lucide-react";
+
+const API_BASE = "http://localhost:8080/api";
+
+const LOCALITY_NAMES = [
+  "Kharadi, Pune",
+  "Baner, Pune",
+  "Wakad, Pune",
+  "Hinjewadi, Pune",
+  "Viman Nagar, Pune",
+  "Wagholi, Pune",
+  "Kothrud, Pune",
+  "Kalyani Nagar, Pune",
+];
 
 const EMPTY_FORM = {
   ownerName: "",
@@ -17,107 +29,264 @@ const EMPTY_FORM = {
   type: "Apartment",
   price: "",
   area: "",
-  status: "Available",
+  status: "AVAILABLE",
   description: "",
 };
 
+function inr(value) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(Number(value) || 0);
+}
+
+function backendToFrontend(property) {
+  return {
+    ...property,
+    id: property.propertyId,
+    title: property.propertyName,
+    locality: property.location,
+    type: property.propertyType,
+    area: property.areaSqft,
+    price: property.price,
+    brokerId: property.addedBy,
+    status: property.status,
+    images: property.imagePath ? [property.imagePath] : [],
+  };
+}
+
 export default function BrokerListings() {
   const { user } = useAuth();
-  const [allProperties, setAllProperties] = useState(loadProperties());
-  const listings = allProperties.filter((p) => p.brokerId === user?.brokerId);
+
+  const [allProperties, setAllProperties] = useState([]);
+  const [broker, setBroker] = useState(null);
+
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [photos, setPhotos] = useState([]);
+
+  const [editingId, setEditingId] = useState(null);
   const [justAdded, setJustAdded] = useState(null);
 
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!user?.brokerId) {
+      setLoading(false);
+      return;
+    }
+
+    async function loadData() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const brokerResponse = await fetch(
+          `${API_BASE}/brokers/code/${user.brokerId}`
+        );
+
+        if (!brokerResponse.ok) {
+          throw new Error("Broker details could not be loaded.");
+        }
+
+        const brokerData = await brokerResponse.json();
+        setBroker(brokerData);
+
+        const propertiesResponse = await fetch(
+          `${API_BASE}/properties`
+        );
+
+        if (!propertiesResponse.ok) {
+          throw new Error("Properties could not be loaded.");
+        }
+
+        const propertiesData = await propertiesResponse.json();
+
+        setAllProperties(propertiesData);
+      } catch (err) {
+        console.error("Broker listings loading error:", err);
+        setError(err.message || "Unable to load listings.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [user?.brokerId]);
+
+  const listings = allProperties.filter(
+    (property) =>
+      broker &&
+      Number(property.addedBy) === Number(broker.brokerId)
+  );
+
   function update(key, value) {
-    setForm((f) => ({ ...f, [key]: value }));
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
   }
 
-  function openAddForm() {
-    setEditingId(null);
+  function resetForm() {
     setForm(EMPTY_FORM);
     setPhotos([]);
-    setJustAdded(null);
-    setShowForm(true);
+    setEditingId(null);
+    setShowForm(false);
   }
 
-  function openEditForm(property) {
-    setEditingId(property.id);
+  function startEdit(property) {
+    setEditingId(property.propertyId);
+
     setForm({
       ownerName: property.ownerName || "",
       ownerPhone: property.ownerPhone || "",
       ownerEmail: property.ownerEmail || "",
-      title: property.title,
-      locality: property.locality,
-      bhk: String(property.bhk),
-      type: property.type,
-      price: String(property.price),
-      area: String(property.area),
-      status: property.status,
+      title: property.propertyName || "",
+      locality: property.location || LOCALITY_NAMES[0],
+      bhk: String(property.bhk || 2),
+      type: property.propertyType || "Apartment",
+      price: String(property.price || ""),
+      area: String(property.areaSqft || ""),
+      status: property.status || "AVAILABLE",
       description: property.description || "",
     });
-    setPhotos(property.images || []);
+
+    setPhotos(property.imagePath ? [property.imagePath] : []);
     setJustAdded(null);
     setShowForm(true);
   }
 
-  function closeForm() {
-    setShowForm(false);
-    setEditingId(null);
+  async function handleDelete(propertyId) {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this listing?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setError("");
+
+      const response = await fetch(
+        `${API_BASE}/properties/${propertyId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Listing could not be deleted.");
+      }
+
+      setAllProperties((current) =>
+        current.filter(
+          (property) => property.propertyId !== propertyId
+        )
+      );
+    } catch (err) {
+      console.error("Delete listing error:", err);
+      setError(err.message || "Unable to delete listing.");
+    }
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (editingId) {
-      const updated = allProperties.map((p) =>
-        p.id === editingId
-          ? {
-              ...p,
-              title: form.title,
-              locality: form.locality,
-              bhk: Number(form.bhk),
-              price: Number(form.price),
-              area: Number(form.area),
-              type: form.type,
-              status: form.status,
-              description: form.description,
-              ownerName: form.ownerName,
-              ownerPhone: form.ownerPhone,
-              ownerEmail: form.ownerEmail,
-              images: photos,
-              ...localityCoords(form.locality),
-            }
-          : p
-      );
-      setAllProperties(updated);
-      saveProperties(updated);
-      closeForm();
-    } else {
-      const newProperty = {
-        id: nextPropertyId(),
-        title: form.title,
-        locality: form.locality,
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    if (!broker?.brokerId) {
+      setError("Broker details are not available.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError("");
+
+      const imagePath =
+        photos.length > 0 ? photos[0] : null;
+
+      const propertyData = {
+        propertyName: form.title,
+        location: form.locality,
+        propertyType: form.type,
         bhk: Number(form.bhk),
+        bathrooms: null,
         price: Number(form.price),
-        area: Number(form.area),
-        type: form.type,
-        description: form.description,
-        status: form.status,
-        brokerId: user?.brokerId,
-        // Owner contact is kept for the broker/admin only — never shown on the public site.
+        areaSqft: Number(form.area),
         ownerName: form.ownerName,
         ownerPhone: form.ownerPhone,
-        ownerEmail: form.ownerEmail,
-        images: photos,
-        ...localityCoords(form.locality),
+        ownerEmail: form.ownerEmail || null,
+        description: form.description,
+        imagePath,
+        blueprintPath: null,
+        status: form.status,
+        featured: false,
+        addedBy: Number(broker.brokerId),
       };
-      const updated = [newProperty, ...allProperties];
-      setAllProperties(updated);
-      saveProperties(updated);
-      setJustAdded(newProperty);
-      closeForm();
+
+      let response;
+
+      if (editingId) {
+        response = await fetch(
+          `${API_BASE}/properties/${editingId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(propertyData),
+          }
+        );
+      } else {
+        response = await fetch(
+          `${API_BASE}/properties`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(propertyData),
+          }
+        );
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          editingId
+            ? "Listing could not be updated."
+            : "Listing could not be created."
+        );
+      }
+
+      const savedProperty = await response.json();
+
+      setAllProperties((current) => {
+        if (editingId) {
+          return current.map((property) =>
+            property.propertyId === editingId
+              ? savedProperty
+              : property
+          );
+        }
+
+        return [savedProperty, ...current];
+      });
+
+      if (!editingId) {
+        setJustAdded(
+          backendToFrontend(savedProperty)
+        );
+      }
+
+      resetForm();
+    } catch (err) {
+      console.error("Save listing error:", err);
+      setError(
+        err.message || "Unable to save listing."
+      );
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -128,60 +297,235 @@ export default function BrokerListings() {
       subtitle="Take the owner's details here — it publishes straight to the customer website"
     >
       <div className="mb-4 flex justify-end">
-        <button onClick={openAddForm} className="btn-primary gap-2">
-          <Plus size={16} /> New Listing from Owner
+        <button
+          onClick={() => {
+            setEditingId(null);
+            setForm(EMPTY_FORM);
+            setPhotos([]);
+            setJustAdded(null);
+            setShowForm((current) => !current);
+          }}
+          className="btn-primary gap-2"
+        >
+          <Plus size={16} />
+          New Listing from Owner
         </button>
       </div>
 
+      {error && (
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
       {showForm && (
         <Card className="mb-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-display text-sm uppercase tracking-[0.14em] text-ink">
-              {editingId ? `Edit Listing — ${editingId}` : "New Listing"}
-            </h3>
-            <button onClick={closeForm} className="text-muted hover:text-ink">
-              <X size={18} />
-            </button>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-6"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-display text-xs uppercase tracking-[0.14em] text-muted">
+                  {editingId
+                    ? "Edit Listing"
+                    : "Owner details"}
+                </h3>
+
+                <p className="mt-1 text-xs text-muted">
+                  Kept private — visible only to you and Admin,
+                  never shown to customers.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={resetForm}
+                className="text-muted hover:text-ink"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
             <div>
-              <h3 className="font-display text-xs uppercase tracking-[0.14em] text-muted">Owner details</h3>
-              <p className="mt-1 text-xs text-muted">Kept private — visible only to you and Admin, never shown to customers.</p>
               <div className="mt-3 grid gap-4 sm:grid-cols-3">
-                <input required placeholder="Owner name" className="input" value={form.ownerName} onChange={(e) => update("ownerName", e.target.value)} />
-                <input required placeholder="Owner phone" className="input" value={form.ownerPhone} onChange={(e) => update("ownerPhone", e.target.value)} />
-                <input type="email" placeholder="Owner email (optional)" className="input" value={form.ownerEmail} onChange={(e) => update("ownerEmail", e.target.value)} />
+                <input
+                  required
+                  placeholder="Owner name"
+                  className="input"
+                  value={form.ownerName}
+                  onChange={(e) =>
+                    update("ownerName", e.target.value)
+                  }
+                />
+
+                <input
+                  required
+                  placeholder="Owner phone"
+                  className="input"
+                  value={form.ownerPhone}
+                  onChange={(e) =>
+                    update("ownerPhone", e.target.value)
+                  }
+                />
+
+                <input
+                  type="email"
+                  placeholder="Owner email (optional)"
+                  className="input"
+                  value={form.ownerEmail}
+                  onChange={(e) =>
+                    update("ownerEmail", e.target.value)
+                  }
+                />
               </div>
             </div>
 
             <div>
-              <h3 className="font-display text-xs uppercase tracking-[0.14em] text-muted">Property details</h3>
+              <h3 className="font-display text-xs uppercase tracking-[0.14em] text-muted">
+                Property details
+              </h3>
+
               <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <input required placeholder="Property title" className="input" value={form.title} onChange={(e) => update("title", e.target.value)} />
-                <select required className="input" value={form.locality} onChange={(e) => update("locality", e.target.value)}>
-                  {LOCALITY_NAMES.map((l) => <option key={l} value={l}>{l}</option>)}
+                <input
+                  required
+                  placeholder="Property title"
+                  className="input"
+                  value={form.title}
+                  onChange={(e) =>
+                    update("title", e.target.value)
+                  }
+                />
+
+                <select
+                  className="input"
+                  value={form.locality}
+                  onChange={(e) =>
+                    update("locality", e.target.value)
+                  }
+                >
+                  {LOCALITY_NAMES.map((locality) => (
+                    <option
+                      key={locality}
+                      value={locality}
+                    >
+                      {locality}
+                    </option>
+                  ))}
                 </select>
-                <select className="input" value={form.bhk} onChange={(e) => update("bhk", e.target.value)}>
-                  {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n} BHK</option>)}
+
+                <select
+                  className="input"
+                  value={form.bhk}
+                  onChange={(e) =>
+                    update("bhk", e.target.value)
+                  }
+                >
+                  {[1, 2, 3, 4].map((number) => (
+                    <option
+                      key={number}
+                      value={number}
+                    >
+                      {number} BHK
+                    </option>
+                  ))}
                 </select>
-                <select className="input" value={form.type} onChange={(e) => update("type", e.target.value)}>
-                  {["Apartment", "Villa", "Penthouse"].map((t) => <option key={t}>{t}</option>)}
+
+                <select
+                  className="input"
+                  value={form.type}
+                  onChange={(e) =>
+                    update("type", e.target.value)
+                  }
+                >
+                  {[
+                    "Apartment",
+                    "Villa",
+                    "Penthouse",
+                    "Commercial",
+                  ].map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
                 </select>
-                <input required type="number" placeholder="Price (INR)" className="input" value={form.price} onChange={(e) => update("price", e.target.value)} />
-                <input required type="number" placeholder="Area (sqft)" className="input" value={form.area} onChange={(e) => update("area", e.target.value)} />
-                <select className="input" value={form.status} onChange={(e) => update("status", e.target.value)}>
-                  {["Available", "Booked"].map((s) => <option key={s}>{s}</option>)}
+
+                <input
+                  required
+                  type="number"
+                  placeholder="Price (INR)"
+                  className="input"
+                  value={form.price}
+                  onChange={(e) =>
+                    update("price", e.target.value)
+                  }
+                />
+
+                <input
+                  required
+                  type="number"
+                  placeholder="Area (sqft)"
+                  className="input"
+                  value={form.area}
+                  onChange={(e) =>
+                    update("area", e.target.value)
+                  }
+                />
+
+                <select
+                  className="input"
+                  value={form.status}
+                  onChange={(e) =>
+                    update("status", e.target.value)
+                  }
+                >
+                  <option value="AVAILABLE">
+                    Available
+                  </option>
+                  <option value="SOLD">
+                    Sold
+                  </option>
+                  <option value="RESERVED">
+                    Reserved
+                  </option>
                 </select>
-                <textarea rows={3} placeholder="Description for customers (optional)" className="input sm:col-span-2" value={form.description} onChange={(e) => update("description", e.target.value)} />
+
+                <textarea
+                  rows={3}
+                  placeholder="Description for customers (optional)"
+                  className="input sm:col-span-2"
+                  value={form.description}
+                  onChange={(e) =>
+                    update("description", e.target.value)
+                  }
+                />
               </div>
             </div>
 
-            <PhotoUpload photos={photos} onChange={setPhotos} />
+            <div>
+              <h3 className="font-display text-xs uppercase tracking-[0.14em] text-muted">
+                Property photo
+              </h3>
 
-            <div className="flex gap-2">
-              <button type="submit" className="btn-primary">{editingId ? "Save Changes" : "Publish Listing"}</button>
-              <button type="button" onClick={closeForm} className="btn-outline">Cancel</button>
+              <div className="mt-3">
+                <PhotoUpload
+                photos={photos}
+                onChange={setPhotos}
+                />
+              </div>
             </div>
+
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn-primary"
+            >
+              {saving
+                ? "Saving..."
+                : editingId
+                  ? "Update Listing"
+                  : "Publish Listing"}
+            </button>
           </form>
         </Card>
       )}
@@ -189,10 +533,19 @@ export default function BrokerListings() {
       {justAdded && (
         <div className="mb-6 flex items-center justify-between rounded-lg bg-sage/10 p-3 text-sm text-ink">
           <span>
-            <span className="font-medium">{justAdded.title}</span> is live on the customer site — {justAdded.id}
+            <span className="font-medium">
+              {justAdded.title}
+            </span>{" "}
+            is live on the customer site — {justAdded.id}
           </span>
-          <Link to={`/properties/${justAdded.id}`} target="_blank" className="inline-flex items-center gap-1 text-maroon hover:underline">
-            View <ExternalLink size={13} />
+
+          <Link
+            to={`/properties/${justAdded.id}`}
+            target="_blank"
+            className="inline-flex items-center gap-1 text-maroon hover:underline"
+          >
+            View
+            <ExternalLink size={13} />
           </Link>
         </div>
       )}
@@ -201,47 +554,122 @@ export default function BrokerListings() {
         <table className="w-full text-sm">
           <thead className="bg-cream/60 text-left text-xs uppercase tracking-wide text-muted">
             <tr>
-              <th className="px-4 py-3">Photo</th>
-              <th className="px-4 py-3">Property</th>
-              <th className="px-4 py-3">Owner</th>
-              <th className="px-4 py-3">Locality</th>
-              <th className="px-4 py-3">Price</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Live page</th>
-              <th className="px-4 py-3">Edit</th>
+              <th className="px-4 py-3">
+                Property
+              </th>
+
+              <th className="px-4 py-3">
+                Owner
+              </th>
+
+              <th className="px-4 py-3">
+                Locality
+              </th>
+
+              <th className="px-4 py-3">
+                Price
+              </th>
+
+              <th className="px-4 py-3">
+                Status
+              </th>
+
+              <th className="px-4 py-3">
+                Live page
+              </th>
+
+              <th className="px-4 py-3">
+                Action
+              </th>
             </tr>
           </thead>
+
           <tbody className="divide-y divide-cream">
-            {listings.length === 0 && (
-              <tr><td colSpan={8} className="px-4 py-6 text-center text-muted">No listings yet — use &quot;New Listing from Owner&quot; above.</td></tr>
-            )}
-            {listings.map((p) => (
-              <tr key={p.id}>
-                <td className="px-4 py-3">
-                  {p.images?.[0] ? (
-                    <img src={p.images[0]} alt={p.title} className="h-12 w-12 rounded-lg object-cover" />
-                  ) : (
-                    <div className="h-12 w-12 rounded-lg bg-cream" />
-                  )}
-                </td>
-                <td className="px-4 py-3 font-medium text-ink">{p.title}</td>
-                <td className="px-4 py-3 text-muted">{p.ownerName || "—"}</td>
-                <td className="px-4 py-3 text-muted">{p.locality}</td>
-                <td className="px-4 py-3">{inr(p.price)}</td>
-                <td className="px-4 py-3 text-muted">{p.status}</td>
-                <td className="px-4 py-3">
-                  <Link to={`/properties/${p.id}`} target="_blank" className="text-maroon hover:underline">View</Link>
-                </td>
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => openEditForm(p)}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-maroon hover:underline"
-                  >
-                    <Pencil size={13} /> Edit
-                  </button>
+            {loading && (
+              <tr>
+                <td
+                  colSpan={7}
+                  className="px-4 py-6 text-center text-muted"
+                >
+                  Loading listings...
                 </td>
               </tr>
-            ))}
+            )}
+
+            {!loading &&
+              listings.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-4 py-6 text-center text-muted"
+                  >
+                    No listings yet — use
+                    "New Listing from Owner" above.
+                  </td>
+                </tr>
+              )}
+
+            {!loading &&
+              listings.map((property) => (
+                <tr key={property.propertyId}>
+                  <td className="px-4 py-3 font-medium text-ink">
+                    {property.propertyName}
+                  </td>
+
+                  <td className="px-4 py-3 text-muted">
+                    {property.ownerName || "—"}
+                  </td>
+
+                  <td className="px-4 py-3 text-muted">
+                    {property.location}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    {inr(property.price)}
+                  </td>
+
+                  <td className="px-4 py-3 text-muted">
+                    {property.status}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <Link
+                      to={`/properties/${property.propertyId}`}
+                      target="_blank"
+                      className="text-maroon hover:underline"
+                    >
+                      View
+                    </Link>
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          startEdit(property)
+                        }
+                        className="inline-flex items-center gap-1 text-maroon hover:underline"
+                      >
+                        <Pencil size={14} />
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDelete(
+                            property.propertyId
+                          )
+                        }
+                        className="text-red-600 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
